@@ -8,6 +8,34 @@ function App() {
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
 
+  const runHandpose = async () => {
+    const net = await handpose.load();
+
+    setInterval(() => {
+      detectHand(net)
+    }, 100);
+  }
+
+  const detectHand = async (net) => {
+      if(typeof webcamRef.current !== "undefined" && webcamRef.current !== null &&
+        webcamRef.current.video.readyState === 4){
+        const video = webcamRef.current.video;
+        const videoWidth = video.videoWidth;
+        const videoHeight = video.videoHeight;
+
+        webcamRef.current.video.width = videoWidth;
+        webcamRef.current.video.height = videoHeight;
+
+        canvasRef.current.width = videoWidth;
+        canvasRef.current.height = videoHeight;
+
+        const hand = await net.estimateHands(video);
+        console.log(hand);
+      }
+  }
+
+  runHandpose();
+
   return (
     <div className="App">
       <header className="App-header">
