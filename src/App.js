@@ -8,6 +8,11 @@ import "./App.css";
 const MOBILE_NET_INPUT_WIDTH = 224;
 const MOBILE_NET_INPUT_HEIGHT = 224;
 const STOP_DATA_GATHER = -1;
+let trainingDataInputs = [];
+let trainingDataOutputs = [];
+let examplesCount = [];
+let mobilenet = undefined;
+let gatherDataState = STOP_DATA_GATHER;
 
 function App() {
   const videoRef = useRef(null);
@@ -15,15 +20,8 @@ function App() {
   const [handPresence, setHandPresence] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [CLASS_NAMES, setClassNames] = useState([]);
-
-  let mobilenet = undefined; //MAY HAVE TO MOVE
-  let gatherDataState = STOP_DATA_GATHER;
-  let videoPlaying = false;
-  let trainingDataInputs = [];
-  let trainingDataOutputs = [];
-  let examplesCount = [];
+  const [status, setStatus] = useState("");
   let predict = false;
-
 
   useEffect(() => {
     let handLandmarker;
@@ -110,16 +108,24 @@ function App() {
         console.log(answer.shape);
       });
     }
-
+    
     loadMobileNetFeatureModel();
 
-  }, []);
+    const classes = Array.from(uniqueClasses);
+    
+    let model = tf.sequential();
+    model.add(tf.layers.dense({inputShape: [1024], units: 128, activation: 'relu'}));
+    model.add(tf.layers.dense({units: classes.length, activation: 'softmax'}));
 
-  function handleEnableCam() {
-    // TODO: Fill this out later in the codelab!
-    console.log("web cam enableing")
-  }
-  
+    model.summary();
+
+    model.compile({
+      optimizer: 'adam',
+      loss: (classes.length === 2) ? 'binaryCrossentropy': 'categoricalCrossentropy', 
+      metrics: ['accuracy']  
+    });
+    
+  }, []); 
   
   function handleTrainAndPredict() {
     // TODO: Fill this out later in the codelab!
@@ -133,17 +139,55 @@ function App() {
   }
 
   function gatherDataForClass(e) {
-    // TODO: Fill this out later in the codelab!
-    console.log(e.target)
-  }  
-  
+    let classNumber = +e.target.getAttribute("data-1hot");
 
+    if (e.type === "mousedown") {
+      gatherDataState = classNumber;
+      dataGatherLoop();
+    } else if (e.type === "mouseup") {
+      gatherDataState = STOP_DATA_GATHER;
+    }
+
+    dataGatherLoop();
+  }  
+
+  function dataGatherLoop(){
+    if (gatherDataState !== STOP_DATA_GATHER && videoRef.current && videoRef.current.readyState >= 2){
+      let imageFeatures = tf.tidy(function(){
+        let videoFrameAsTensor = tf.browser.fromPixels(videoRef.current);
+        let resizedTensorFrame = tf.image.resizeBilinear(videoFrameAsTensor, [MOBILE_NET_INPUT_HEIGHT, 
+            MOBILE_NET_INPUT_WIDTH], true);
+        let normalizedTensorFrame = resizedTensorFrame.div(255);
+        return mobilenet.predict(normalizedTensorFrame.expandDims()).squeeze();
+      });
+
+      trainingDataInputs.push(imageFeatures);
+      trainingDataOutputs.push(gatherDataState);  
+
+      if (examplesCount[gatherDataState] === undefined) {
+        examplesCount[gatherDataState] = 0;
+      }
+      examplesCount[gatherDataState]++;
+
+      let newStatus = '';
+      for (let n = 0; n < CLASS_NAMES.length; n++) {
+        newStatus += CLASS_NAMES[n] + ' data count: ' + examplesCount[n] + '. ';
+      }
+      setStatus(newStatus);
+      
+      window.requestAnimationFrame(dataGatherLoop);
+    } 
+  }
+  
   return (
     <>
       <h1>{loaded? "MobileNet v3 loaded successfully!" : "Loading..."}</h1>
       <h1>Is there a Hand? {handPresence ? "Yes" : "No"}</h1>
+      
       <div style={{ position: "relative" }}>
+      <p style={{position: "absolute", left: 2}}>{status.split(". ").map(s => <li key={s}>{s}</li>)}</p>
         <video
+          id="video"
           ref={videoRef}
           autoPlay
           muted
@@ -176,25 +220,27 @@ function App() {
         ></canvas>
       </div>
       <div id="buttons">
-          <button id="enableCam" onClick={handleEnableCam}>Enable Webcam</button>
           <button id="train" onClick={handleTrainAndPredict}>Train &amp; Predict!</button>
           <button id="reset" onClick={handleReset}>Reset</button> <br/>
           <button 
           className="dataCollector" data-1hot="0" data-name="Class A"
-          onMouseUp={gatherDataForClass} onMouseDown={gatherDataForClass}
+          onMouseUp={gatherDataForClass} 
+          onMouseDown={gatherDataForClass}
           >
             Gather Class A Data
           </button>
 
           <button 
           className="dataCollector" data-1hot="1" data-name="Class B"
-          onMouseUp={gatherDataForClass} onMouseDown={gatherDataForClass}
+          onMouseUp={gatherDataForClass} 
+          onMouseDown={gatherDataForClass}
           >
             Gather Class B Data
           </button>
 
           <button className="dataCollector" data-1hot="2" data-name="Class V"
-          onMouseUp={gatherDataForClass} onMouseDown={gatherDataForClass}
+          onMouseUp={gatherDataForClass} 
+          onMouseDown={gatherDataForClass}
           >
             Gather Class V Data
           </button>

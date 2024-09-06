@@ -12,7 +12,7 @@ export const drawLandmarks = (landmarksArray, myCanvas) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     landmarksArray.forEach((landmarks) => {
-      console.log("lanmarks array: ", landmarksArray)
+    //   console.log("lanmarks array: ", landmarksArray)
        for(let i=0; i<Object.keys(fingerJoints).length; i++){
               let finger = Object.keys(fingerJoints)[i];
 
