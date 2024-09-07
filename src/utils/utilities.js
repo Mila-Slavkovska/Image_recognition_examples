@@ -6,44 +6,44 @@ const fingerJoints = {
     pinky: [0, 17, 18, 19, 20],
 };
 
-export const drawLandmarks = (landmarksArray, myCanvas) => {
-    const canvas = myCanvas;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+export const drawHand = (predictions, ctx) => {
+    if(predictions.length > 0){
+        predictions.forEach(prediction => {
+            const landmarks = prediction.landmarks;
 
-    landmarksArray.forEach((landmarks) => {
-      console.log("lanmarks array: ", landmarksArray)
-       for(let i=0; i<Object.keys(fingerJoints).length; i++){
-              let finger = Object.keys(fingerJoints)[i];
+            for(let i=0; i<Object.keys(fingerJoints).length; i++){
+                let finger = Object.keys(fingerJoints)[i];
 
-              for(let j=0; j<fingerJoints[finger].length-1; j++){
-                  const firstJointIndex = fingerJoints[finger][j];
-                  const secondJointIndex = fingerJoints[finger][j+1];
+                for(let j=0; j<fingerJoints[finger].length-1; j++){
+                    const firstJointIndex = fingerJoints[finger][j];
+                    const secondJointIndex = fingerJoints[finger][j+1];
 
-                  ctx.beginPath();
-                  ctx.moveTo(
-                      landmarks[firstJointIndex].x * canvas.width,
-                      landmarks[firstJointIndex].y * canvas.height
-                  );
-                  ctx.lineTo(
-                      landmarks[secondJointIndex].x * canvas.width,
-                      landmarks[secondJointIndex].y * canvas.height
-                  );
+                    ctx.beginPath();
+                    ctx.moveTo(
+                        landmarks[firstJointIndex][0],
+                        landmarks[firstJointIndex][1]
+                    );
+                    ctx.lineTo(
+                        landmarks[secondJointIndex][0],
+                        landmarks[secondJointIndex][1]
+                    );
 
-                  ctx.strokeStyle = "plum";
-                  ctx.lineWidth = 3;
-                  ctx.stroke();
-              }
-          }
+                    ctx.strokeStyle = "plum";
+                    ctx.lineWidth = 5;
+                    ctx.stroke();
+                }
+            }
 
-      landmarks.forEach((landmark) => {        
-        const x = landmark.x * canvas.width;
-        const y = landmark.y * canvas.height;
+            for(let i=0; i<landmarks.length; i++){
+                const x = landmarks[i][0];
+                const y = landmarks[i][1];
 
-        ctx.beginPath();
-        ctx.arc(x, y, 4, 0, 2*Math.PI); 
-        ctx.fillStyle = "indigo";
-        ctx.fill();
-      });
-    });
-  };
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, 3*Math.PI);
+
+                ctx.fillStyle = "indigo";
+                ctx.fill();
+            }
+        });
+    }
+}
