@@ -12,6 +12,7 @@ let trainingDataInputs = [];
 let trainingDataOutputs = [];
 let examplesCount = [];
 let mobilenet = undefined;
+let model = undefined;
 let gatherDataState = STOP_DATA_GATHER;
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
   const [loaded, setLoaded] = useState(false);
   const [CLASS_NAMES, setClassNames] = useState([]);
   const [status, setStatus] = useState("");
+  const [predictionText, setPredictionText] = useState("");
   let predict = false;
 
   useEffect(() => {
@@ -113,7 +115,7 @@ function App() {
 
     const classes = Array.from(uniqueClasses);
     
-    let model = tf.sequential();
+    model = tf.sequential();
     model.add(tf.layers.dense({inputShape: [1024], units: 128, activation: 'relu'}));
     model.add(tf.layers.dense({units: classes.length, activation: 'softmax'}));
 
@@ -127,15 +129,57 @@ function App() {
     
   }, []); 
   
-  function handleTrainAndPredict() {
-    // TODO: Fill this out later in the codelab!
-    console.log("train and predict")
+  async function handleTrainAndPredict() {
+    predict = false;
+    tf.util.shuffleCombo(trainingDataInputs, trainingDataOutputs);
+    let outputsAsTensor = tf.tensor1d(trainingDataOutputs, 'int32');
+    let oneHotOutputs = tf.oneHot(outputsAsTensor, CLASS_NAMES.length);
+    let inputsAsTensor = tf.stack(trainingDataInputs);
+    
+    let results = await model.fit(inputsAsTensor, oneHotOutputs, {shuffle: true, batchSize: 5, epochs: 10, 
+        callbacks: {onEpochEnd: logProgress} });
+    
+    outputsAsTensor.dispose();
+    oneHotOutputs.dispose();
+    inputsAsTensor.dispose();
+    predict = true;
+    predictLoop();
   }
+
+  function logProgress(epoch, logs) {
+    console.log('Data for epoch ' + epoch, logs);
+  }  
   
+  function predictLoop() {
+    if (predict) {
+      tf.tidy(function() {
+        let videoFrameAsTensor = tf.browser.fromPixels(videoRef.current).div(255);
+        let resizedTensorFrame = tf.image.resizeBilinear(videoFrameAsTensor,[MOBILE_NET_INPUT_HEIGHT, 
+            MOBILE_NET_INPUT_WIDTH], true);
+          
+        let imageFeatures = mobilenet.predict(resizedTensorFrame.expandDims());
+        let prediction = model.predict(imageFeatures).squeeze();
+        let highestIndex = prediction.argMax().arraySync();
+        let predictionArray = prediction.arraySync();
+  
+        setPredictionText('Prediction: ' + CLASS_NAMES[highestIndex] + ' with ' + Math.floor(predictionArray[highestIndex] * 100) + '% confidence');
+      });
+  
+      window.requestAnimationFrame(predictLoop);
+    }
+  }  
   
   function handleReset() {
-    // TODO: Fill this out later in the codelab!
-    console.log("reset")
+    predict = false;
+    examplesCount.length = 0;
+    for (let i = 0; i < trainingDataInputs.length; i++) {
+      trainingDataInputs[i].dispose();
+    }
+    trainingDataInputs.length = 0;
+    trainingDataOutputs.length = 0;
+    setStatus('No data collected');
+    
+    console.log('Tensors in memory: ' + tf.memory().numTensors);
   }
 
   function gatherDataForClass(e) {
@@ -183,7 +227,7 @@ function App() {
     <>
       <h1>{loaded? "MobileNet v3 loaded successfully!" : "Loading..."}</h1>
       <h1>Is there a Hand? {handPresence ? "Yes" : "No"}</h1>
-      
+      <p>{predictionText}</p>
       <div style={{ position: "relative" }}>
       <p style={{position: "absolute", left: 2}}>{status.split(". ").map(s => <li key={s}>{s}</li>)}</p>
         <video
