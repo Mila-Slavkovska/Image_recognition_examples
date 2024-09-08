@@ -21,7 +21,7 @@ function App() {
   const [handPresence, setHandPresence] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [CLASS_NAMES, setClassNames] = useState([]);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState("No data collected");
   const [predictionText, setPredictionText] = useState("");
   let predict = false;
 
@@ -130,6 +130,10 @@ function App() {
   }, []); 
   
   async function handleTrainAndPredict() {
+    if(trainingDataInputs.length == 0){
+      return;
+    }
+
     predict = false;
     tf.util.shuffleCombo(trainingDataInputs, trainingDataOutputs);
     let outputsAsTensor = tf.tensor1d(trainingDataOutputs, 'int32');
@@ -215,7 +219,8 @@ function App() {
 
       let newStatus = '';
       for (let n = 0; n < CLASS_NAMES.length; n++) {
-        newStatus += CLASS_NAMES[n] + ' data count: ' + examplesCount[n] + '. ';
+        let numSamples = examplesCount[n] || 0;
+        newStatus += CLASS_NAMES[n] + ' data count: ' + numSamples + '. ';
       }
       setStatus(newStatus);
       
@@ -224,12 +229,13 @@ function App() {
   }
   
   return (
-    <>
-      <h1>{loaded? "MobileNet v3 loaded successfully!" : "Loading..."}</h1>
-      <h1>Is there a Hand? {handPresence ? "Yes" : "No"}</h1>
-      <p>{predictionText}</p>
+    <div className="App">
+      <h2 style={{color: "coral"}}>{loaded? "MobileNet v3 loaded successfully!" : "Loading..."}</h2>
+      <h2>Is there a Hand? {handPresence ? "Yes" : "No"}</h2>
+      <p id="prediction">{predictionText || "After clicking Train, please wait for the prediction."}</p>
       <div style={{ position: "relative" }}>
-      <p style={{position: "absolute", left: 2}}>{status.split(". ").map(s => <li key={s}>{s}</li>)}</p>
+        <p id="samples">{status.split(". ").map(s => <li key={s}>{s}</li>)}</p>
+        
         <video
           id="video"
           ref={videoRef}
@@ -263,33 +269,50 @@ function App() {
           }}
         ></canvas>
       </div>
+
       <div id="buttons">
+          <br/>
           <button id="train" onClick={handleTrainAndPredict}>Train &amp; Predict!</button>
           <button id="reset" onClick={handleReset}>Reset</button> <br/>
+
           <button 
-          className="dataCollector" data-1hot="0" data-name="Class A"
+          className="dataCollector" data-1hot="0" data-name="А"
           onMouseUp={gatherDataForClass} 
           onMouseDown={gatherDataForClass}
           >
-            Gather Class A Data
+            Gather 'А' Samples
           </button>
 
           <button 
-          className="dataCollector" data-1hot="1" data-name="Class B"
+          className="dataCollector" data-1hot="1" data-name="Б"
           onMouseUp={gatherDataForClass} 
           onMouseDown={gatherDataForClass}
           >
-            Gather Class B Data
+            Gather 'Б' Samples
           </button>
 
-          <button className="dataCollector" data-1hot="2" data-name="Class V"
+          <button className="dataCollector" data-1hot="2" data-name="В"
           onMouseUp={gatherDataForClass} 
           onMouseDown={gatherDataForClass}
           >
-            Gather Class V Data
+            Gather 'В' Samples
+          </button>
+
+          <button className="dataCollector" data-1hot="3" data-name="Г"
+          onMouseUp={gatherDataForClass} 
+          onMouseDown={gatherDataForClass}
+          >
+            Gather 'Г' Samples
+          </button>
+
+          <button className="dataCollector" data-1hot="4" data-name="Д"
+          onMouseUp={gatherDataForClass} 
+          onMouseDown={gatherDataForClass}
+          >
+            Gather 'Д' Samples
           </button>
         </div>
-    </>
+    </div>
   );
 }
 

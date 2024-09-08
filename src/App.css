@@ -52,3 +52,33 @@
   display: flex;
   justify-content: space-around;
 }
+
+#samples {
+  position: absolute;
+  margin-left: 8%;
+  width: 15%;
+  border-radius: 5px;
+  padding: 2rem;
+  list-style: none;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+#buttons button{
+  background-color: #282c34;
+  color: aliceblue;
+  padding: 0.5rem;
+  border-radius: 5px;
+  margin: 0.1rem;
+}
+
+#buttons button:hover{
+  background-color: rgb(100, 162, 237);
+}
+
+#prediction{
+  font-size: larger;
+}
+
+body{
+  background-color: whitesmoke;
+}
