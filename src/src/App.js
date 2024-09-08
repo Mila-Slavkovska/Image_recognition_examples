@@ -130,6 +130,10 @@ function App() {
   }, []); 
   
   async function handleTrainAndPredict() {
+    if(!mobilenet){
+      alert("Wait for MobileNet v3 model to load!");
+      return;
+    }
     if(trainingDataInputs.length == 0){
       return;
     }
@@ -174,6 +178,11 @@ function App() {
   }  
   
   function handleReset() {
+    if(!mobilenet){
+      alert("Wait for MobileNet v3 model to load!");
+      return;
+    }
+
     predict = false;
     examplesCount.length = 0;
     for (let i = 0; i < trainingDataInputs.length; i++) {
@@ -187,6 +196,11 @@ function App() {
   }
 
   function gatherDataForClass(e) {
+    if(!mobilenet){
+      alert("Wait for MobileNet v3 model to load!");
+      return;
+    }
+
     let classNumber = +e.target.getAttribute("data-1hot");
 
     if (e.type === "mousedown") {
